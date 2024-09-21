@@ -2,19 +2,20 @@ package com.example.medai
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.*
-import com.example.medai.ui.theme.MedAITheme
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
@@ -22,7 +23,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.medai.ui.theme.MedAITheme
 import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.launch
 import coil.compose.AsyncImage
@@ -36,8 +56,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.IconButton
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.text.font.FontWeight
 
 import android.graphics.Bitmap
@@ -84,6 +107,7 @@ fun MedAINavigation() {
             composable("home") { HomeScreen(navController) }
             composable("account") { AccountScreen(navController = navController) }
             composable("describe_symptom") { DescribeSymptomScreen() }
+            composable("explain_medicine") { ExplainMedicineScreen() }
             composable("user_inquiries") { UserInquiries(profile = null) {navController.popBackStack()} }
         }
     }
@@ -132,7 +156,7 @@ fun HomeScreen(navController: NavHostController) {
             Text("Describe your symptom")
         }
         Button(
-            onClick = { /* TODO: Add action for medicine details */ },
+            onClick = { navController.navigate("explain_medicine")},
             modifier = Modifier.fillMaxWidth().padding(8.dp)
         ) {
             Text("Get Medicine Details")
@@ -277,6 +301,130 @@ fun getBitmapFromUri(context: Context, uri: Uri): Bitmap? {
         null
     }
 }
+@Composable
+fun ExplainMedicineScreen() {
+    var medicineDescription by remember { mutableStateOf("") }
+    var responseText by remember { mutableStateOf("Response will be shown here.") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val generativeModel = GenerativeModel(
+        modelName = "gemini-1.5-flash-latest", // Replace with your actual model
+        apiKey = "XXX" // TODO: how to store this locally.
+    )
+
+    // Image picker launcher
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Upload image button
+        Button(
+            onClick = {
+                // Open image picker to select an image
+                launcher.launch("image/*")
+            },
+            modifier = Modifier.fillMaxWidth().padding(8.dp)
+        ) {
+            Icon(Icons.Default.Upload, contentDescription = "Upload")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Upload Medicine Image")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Display selected image
+        selectedImageUri?.let { uri ->
+            AsyncImage(
+                model = uri,
+                contentDescription = "Selected Medicine Image",
+                modifier = Modifier
+                    .height(200.dp)
+                    .fillMaxWidth()
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Text prompting to describe medicine
+        Text(text = "Describe the medicine:")
+
+        // Text input box for medicine description
+        TextField(
+            value = medicineDescription,
+            onValueChange = { medicineDescription = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            label = { Text("Medicine description") }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Submit button to send medicine data
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    // Convert image Uri to Bitmap (if image is provided)
+                    val bitmap: Bitmap? = selectedImageUri?.let { uri ->
+                        getBitmapFromUri(context, uri)
+                    }
+
+                    // Create prompt based on image and medicine description
+                    val inputContent = if (bitmap != null && medicineDescription.isNotEmpty()) {
+                        // User provided both image and medicine description
+                        content {
+                            image(bitmap)
+                            text("Based on both the image and the description of the medicine: $medicineDescription, please provide detailed information on the medicine's usage, dosage, potential side effects, and recommended actions while taking this medicine.")
+                        }
+                    } else if (bitmap != null) {
+                        // User provided only image
+                        content {
+                            image(bitmap)
+                            text("The image shows the medicine. Please provide detailed information on this medicine's usage, dosage, potential side effects, and recommended actions while taking this medicine.")
+                        }
+                    } else {
+                        // User provided only medicine description
+                        content {
+                            text("Based on the following medicine description: $medicineDescription, please provide detailed information on the medicine's usage, dosage, potential side effects, and recommended actions while taking this medicine.")
+                        }
+                    }
+
+                    // Send the combined prompt to the Gemini API
+                    responseText = generativeModel.generateContent(inputContent).text.orEmpty()
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(8.dp)
+        ) {
+            Text("Submit")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Response text to display Gemini's response
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .border(1.dp, MaterialTheme.colorScheme.onBackground)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(text = responseText)
+        }
+    }
+}
+
 
 @Composable
 fun AccountScreen(loginViewModel: LoginViewModel = viewModel(), navController: NavHostController) {
