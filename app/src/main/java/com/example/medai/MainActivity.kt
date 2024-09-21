@@ -1,5 +1,6 @@
 package com.example.medai
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,7 +40,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.ui.text.font.FontWeight
-
+import java.io.File
+import androidx.compose.ui.platform.LocalContext
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 
 
 class MainActivity : ComponentActivity() {
@@ -79,6 +83,8 @@ fun MedAINavigation() {
             composable("account") { AccountScreen(navController = navController) }
             composable("describe_symptom") { DescribeSymptomScreen() }
             composable("user_inquiries") { UserInquiries(profile = null) {navController.popBackStack()} }
+            composable("history") { HistoryScreen(context = LocalContext.current) }
+
         }
     }
 }
@@ -139,6 +145,9 @@ fun DescribeSymptomScreen() {
     var symptomDescription by remember { mutableStateOf("") }
     var responseText by remember { mutableStateOf("Response will be shown here.") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    var history by remember { mutableStateOf(listOf<Pair<String, String>>()) } // To store history
+
 
     val coroutineScope = rememberCoroutineScope()
     val generativeModel = GenerativeModel(
@@ -209,6 +218,10 @@ fun DescribeSymptomScreen() {
                 coroutineScope.launch {
                     val input = "Based on the following symptom(s): $symptomDescription, please provide a detailed explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms."
                     responseText = generativeModel.generateContent(input).text.orEmpty()
+
+
+                    // Save to history
+                    history = history + (symptomDescription to responseText)
                 }
             },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
@@ -270,7 +283,7 @@ fun ProfileScreen(userProfile: UserProfile?, onLogout: () -> Unit, navController
 
                 // Create clickable list item
                 ClickableListItem(label = "Profile") {  navController.navigate("user_inquiries")}
-                ClickableListItem(label = "History") { /* TODO: Navigate to History */ }
+                ClickableListItem(label = "History") { navController.navigate("history") }
                 ClickableListItem(label = "Log Out") {
                     onLogout()
                 }
@@ -511,4 +524,56 @@ data class Profile(
     val medicalConditions: String,
     val allergies: String
 )
+
+fun saveResponseToCsv(context: Context, responseText: String) {
+    val file = File(context.filesDir, "response_history.csv")
+
+    // Write to CSV
+    FileOutputStream(file, true).use { outputStream ->
+        val writer = OutputStreamWriter(outputStream)
+        writer.append("$responseText\n") // Append the response text
+        writer.flush()
+    }
+}
+
+fun loadResponseHistory(context: Context): List<String> {
+    val file = File(context.filesDir, "response_history.csv")
+    val history = mutableListOf<String>()
+
+    if (file.exists()) {
+        file.forEachLine { line ->
+            history.add(line)
+        }
+    }
+
+    return history
+}
+
+@Composable
+fun HistoryScreen(context: Context) {
+    val responseHistory = remember { loadResponseHistory(context) }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = "History", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold))
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (responseHistory.isNotEmpty()) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                responseHistory.forEach { response ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        Text(
+                            text = response,
+                            modifier = Modifier.padding(16.dp),
+                            style = TextStyle(fontSize = 16.sp)
+                        )
+                    }
+                }
+            }
+        } else {
+            Text(text = "No history available.")
+        }
+    }
+}
+
 
