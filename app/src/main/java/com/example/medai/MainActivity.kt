@@ -25,6 +25,11 @@ import androidx.compose.material.icons.filled.Upload
 import androidx.compose.foundation.verticalScroll
 import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.launch
+import coil.compose.AsyncImage
+import android.net.Uri
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.layout.height
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,12 +125,20 @@ fun HomeScreen(navController: NavHostController) {
 fun DescribeSymptomScreen() {
     var symptomDescription by remember { mutableStateOf("") }
     var responseText by remember { mutableStateOf("Response will be shown here.") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
     val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash-latest", // Replace with your actual model
         apiKey = "XXX" // TODO: how to store this locally.
     )
+
+    // Image picker launcher
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
 
     Column(
         modifier = Modifier
@@ -136,12 +149,28 @@ fun DescribeSymptomScreen() {
     ) {
         // Upload image button
         Button(
-            onClick = { /* TODO: Add image upload logic */ },
+            onClick = {
+                // Open image picker to select an image
+                launcher.launch("image/*")
+            },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
         ) {
             Icon(Icons.Default.Upload, contentDescription = "Upload")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Upload Image")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Display selected image
+        selectedImageUri?.let { uri ->
+            AsyncImage(
+                model = uri,
+                contentDescription = "Selected Image",
+                modifier = Modifier
+                    .height(200.dp)
+                    .fillMaxWidth()
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
