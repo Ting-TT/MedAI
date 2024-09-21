@@ -113,7 +113,7 @@ fun MedAINavigation() {
             composable("describe_symptom") { DescribeSymptomScreen() }
             composable("explain_medicine") { ExplainMedicineScreen() }
             composable("user_inquiries") { UserInquiries(profile = null) {navController.popBackStack()} }
-            composable("history") { HistoryScreen(context = LocalContext.current) }
+            composable("history") { HistoryScreen(context = LocalContext.current, navController = navController) }
 
         }
     }
@@ -782,11 +782,19 @@ fun loadResponseHistory(context: Context): List<String> {
 }
 
 @Composable
-fun HistoryScreen(context: Context) {
+fun HistoryScreen(context: Context, navController: NavHostController) {
     val responseHistory = remember { loadResponseHistory(context) }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(text = "History", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Text("History", style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold))
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -807,5 +815,6 @@ fun HistoryScreen(context: Context) {
         }
     }
 }
+
 
 
