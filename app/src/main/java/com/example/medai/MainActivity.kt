@@ -192,7 +192,7 @@ fun DescribeSymptomScreen() {
     val coroutineScope = rememberCoroutineScope()
     val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash-latest", // Replace with your actual model
-        apiKey = "XXX"
+        apiKey = "AIzaSyAq64vAhTmb6TpX05XGxsAXaWVNc2y75t4"
     )
 
     // Image picker launcher
@@ -230,7 +230,7 @@ fun DescribeSymptomScreen() {
                 model = uri,
                 contentDescription = "Selected Image",
                 modifier = Modifier
-                    .height(200.dp)
+                    .height(150.dp)
                     .fillMaxWidth()
             )
         }
@@ -238,7 +238,7 @@ fun DescribeSymptomScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Text prompting to describe symptoms
-        Text(text = "Describe your symptoms:")
+        Text(text = "Describe your symptoms:", modifier = Modifier.align(Alignment.Start))
 
         // Text input box for symptom description
         TextField(
@@ -266,23 +266,31 @@ fun DescribeSymptomScreen() {
                         // User provided both image and symptom description
                         content {
                             image(bitmap)
-                            text("Based on both the image and the description: $symptomDescription, please provide an explanation of the potential condition or disease, along with suggestions for possible medications and recommended activities or lifestyle changes to alleviate the symptoms.")
+                            text("Based on both the image and the description: $symptomDescription, " +
+                                    "please provide an explanation of the potential condition or disease, " +
+                                    "along with general tips to alleviate the symptoms.")
                         }
                     } else if (bitmap != null) {
                         // User provided only image
                         content {
                             image(bitmap)
-                            text("The image contains what the user is suffering from. Based on the image, please provide an explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms.")
+                            text("The image contains what the user is suffering from. " +
+                                    "Based on the image, please provide an explanation of the potential condition or disease, " +
+                                    "along with general tips to alleviate the symptoms.")
                         }
                     } else {
                         // User provided only symptom description
                         content {
-                            text("Based on the following symptom(s): $symptomDescription, please provide a detailed explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms.")
+                            text("Based on the following symptom(s): $symptomDescription, " +
+                                    "please provide a detailed explanation of the potential condition or disease, " +
+                                    "along with general tips to alleviate the symptoms.")
                         }
                     }
 
                     // Send the combined prompt to the Gemini API
                     responseText = generativeModel.generateContent(inputContent).text.orEmpty()
+                        .replace("*", "")
+                        .replace("#", "")
 
                     // Save to history (symptom + response)
                     saveSymptomAndResponseToCsv(context, symptomDescription, responseText)
@@ -343,7 +351,7 @@ fun ExplainMedicineScreen() {
     val coroutineScope = rememberCoroutineScope()
     val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash-latest", // Replace with your actual model
-        apiKey = "XXX" // TODO: how to store this locally.
+        apiKey = "AIzaSyAq64vAhTmb6TpX05XGxsAXaWVNc2y75t4" // TODO: how to store this locally.
     )
 
     // Image picker launcher
@@ -381,7 +389,7 @@ fun ExplainMedicineScreen() {
                 model = uri,
                 contentDescription = "Selected Medicine Image",
                 modifier = Modifier
-                    .height(200.dp)
+                    .height(150.dp)
                     .fillMaxWidth()
             )
         }
@@ -389,7 +397,7 @@ fun ExplainMedicineScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Text prompting to describe medicine
-        Text(text = "Describe the medicine:")
+        Text(text = "Describe the medicine:", modifier = Modifier.align(Alignment.Start))
 
         // Text input box for medicine description
         TextField(
@@ -417,23 +425,34 @@ fun ExplainMedicineScreen() {
                         // User provided both image and medicine description
                         content {
                             image(bitmap)
-                            text("Based on both the image and the description of the medicine: $medicineDescription, please provide detailed information on the medicine's usage, dosage, potential side effects, and recommended actions while taking this medicine.")
+                            text(
+                                    "Based on the image and the following medicine name or description: " +
+                                    "$medicineDescription, please tell me all the related information." +
+                                    "Please be as detailed as possible.")
                         }
                     } else if (bitmap != null) {
                         // User provided only image
                         content {
                             image(bitmap)
-                            text("The image shows the medicine. Please provide detailed information on this medicine's usage, dosage, potential side effects, and recommended actions while taking this medicine.")
+                            text(
+                                    "Based on the image tell me all the related information. " +
+                                    "Please be as detailed as possible.")
                         }
                     } else {
                         // User provided only medicine description
                         content {
-                            text("Based on the following medicine description: $medicineDescription, please provide detailed information on the medicine's usage, dosage, potential side effects, and recommended actions while taking this medicine.")
+                            text(
+                                    "Based on the following name or description: " +
+                                    "$medicineDescription, please tell me all the related information." +
+                                    "Please be as detailed as possible.")
                         }
                     }
 
+
                     // Send the combined prompt to the Gemini API
                     responseText = generativeModel.generateContent(inputContent).text.orEmpty()
+                        .replace("*", "")
+                        .replace("#", "")
                 }
             },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
