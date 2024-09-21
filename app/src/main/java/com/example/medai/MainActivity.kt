@@ -3,6 +3,7 @@ package com.example.medai
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +20,8 @@ import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Upload
+import androidx.compose.foundation.text.BasicTextField
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,8 +55,9 @@ fun MedAINavigation() {
             startDestination = "home",
             modifier = Modifier.padding(padding)
         ) {
-            composable("home") { HomeScreen() }
+            composable("home") { HomeScreen(navController) }
             composable("account") { AccountScreen() }
+            composable("describe_symptom") { DescribeSymptomScreen() }
         }
     }
 }
@@ -85,7 +89,7 @@ fun BottomNavigationBar(navController: NavHostController) {
 }
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavHostController) {
     // Two vertically placed buttons on the home screen
     Column(
         modifier = Modifier
@@ -95,7 +99,7 @@ fun HomeScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Button(
-            onClick = { /* TODO: Add action for symptom description */ },
+            onClick = { navController.navigate("describe_symptom") },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
         ) {
             Text("Describe your symptom")
@@ -106,6 +110,71 @@ fun HomeScreen() {
         ) {
             Text("Get Medicine Details")
         }
+    }
+}
+
+@Composable
+fun DescribeSymptomScreen() {
+    var symptomDescription by remember { mutableStateOf("") }
+    var responseText by remember { mutableStateOf("Response will be shown here.") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Upload image button
+        Button(
+            onClick = { /* TODO: Add image upload logic */ },
+            modifier = Modifier.fillMaxWidth().padding(8.dp)
+        ) {
+            Icon(Icons.Default.Upload, contentDescription = "Upload")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Upload Image")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Text prompting to describe symptoms
+        Text(text = "Describe your symptoms:")
+
+        // Text input box for symptom description
+        BasicTextField(
+            value = symptomDescription,
+            onValueChange = { symptomDescription = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .height(150.dp)
+                .border(1.dp, MaterialTheme.colorScheme.onBackground)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Submit button to send symptom data
+        Button(
+            onClick = {
+                // Here you'd add the Gemini API logic to get a response
+                responseText = "Simulated API response: You might have a cold. Suggested medicine: Paracetamol."
+            },
+            modifier = Modifier.fillMaxWidth().padding(8.dp)
+        ) {
+            Text("Submit")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Response text to display Gemini's response
+        Text(
+            text = responseText,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .border(1.dp, MaterialTheme.colorScheme.onBackground)
+                .padding(16.dp)
+        )
     }
 }
 
