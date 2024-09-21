@@ -73,8 +73,6 @@ import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
-import android.content.Context
-import androidx.compose.ui.platform.LocalContext
 import com.google.ai.client.generativeai.type.content
 
 class MainActivity : ComponentActivity() {
@@ -172,14 +170,23 @@ fun HomeScreen(navController: NavHostController) {
     }
 }
 
+fun saveSymptomAndResponseToCsv(context: Context, symptomDescription: String, responseText: String) {
+    val file = File(context.filesDir, "response_history.csv")
+
+    // Append the symptom and response to the file
+    FileOutputStream(file, true).use { outputStream ->
+        val writer = OutputStreamWriter(outputStream)
+        writer.append("$symptomDescription,$responseText\n") // Store both symptom and response
+        writer.flush()
+    }
+}
+
+
 @Composable
 fun DescribeSymptomScreen() {
     var symptomDescription by remember { mutableStateOf("") }
     var responseText by remember { mutableStateOf("Response will be shown here.") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    var history by remember { mutableStateOf(listOf<Pair<String, String>>()) } // To store history
-
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -249,12 +256,6 @@ fun DescribeSymptomScreen() {
         Button(
             onClick = {
                 coroutineScope.launch {
-                    val input = "Based on the following symptom(s): $symptomDescription, please provide a detailed explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms."
-                    responseText = generativeModel.generateContent(input).text.orEmpty()
-
-
-                    // Save to history
-                    history = history + (symptomDescription to responseText)
                     // Convert image Uri to Bitmap (if image is provided)
                     val bitmap: Bitmap? = selectedImageUri?.let { uri ->
                         getBitmapFromUri(context, uri)
@@ -282,6 +283,9 @@ fun DescribeSymptomScreen() {
 
                     // Send the combined prompt to the Gemini API
                     responseText = generativeModel.generateContent(inputContent).text.orEmpty()
+
+                    // Save to history (symptom + response)
+                    saveSymptomAndResponseToCsv(context, symptomDescription, responseText)
                 }
             },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
@@ -747,6 +751,7 @@ fun loadResponseHistory(context: Context): List<String> {
     return history
 }
 
+
 @Composable
 fun HistoryScreen(context: Context) {
     val responseHistory = remember { loadResponseHistory(context) }
@@ -758,13 +763,30 @@ fun HistoryScreen(context: Context) {
 
         if (responseHistory.isNotEmpty()) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                responseHistory.forEach { response ->
-                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Text(
-                            text = response,
-                            modifier = Modifier.padding(16.dp),
-                            style = TextStyle(fontSize = 16.sp)
-                        )
+                responseHistory.forEach { entry ->
+                    // Ensure the entry contains both symptom and response
+                    val parts = entry.split(",", limit = 2)
+                    if (parts.size == 2) {
+                        val (symptom, response) = parts
+                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Symptom: $symptom",
+                                    style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = "Response: $response", style = TextStyle(fontSize = 16.sp))
+                            }
+                        }
+                    } else {
+                        // Handle invalid or incomplete entries
+                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            Text(
+                                text = "Invalid history entry",
+                                style = TextStyle(fontSize = 16.sp),
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -773,5 +795,3 @@ fun HistoryScreen(context: Context) {
         }
     }
 }
-
-
