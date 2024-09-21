@@ -192,7 +192,7 @@ fun DescribeSymptomScreen() {
     val coroutineScope = rememberCoroutineScope()
     val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash-latest", // Replace with your actual model
-        apiKey = "AIzaSyAq64vAhTmb6TpX05XGxsAXaWVNc2y75t4"
+        apiKey = "XXX"
     )
 
     // Image picker launcher
@@ -351,7 +351,7 @@ fun ExplainMedicineScreen() {
     val coroutineScope = rememberCoroutineScope()
     val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash-latest", // Replace with your actual model
-        apiKey = "AIzaSyAq64vAhTmb6TpX05XGxsAXaWVNc2y75t4" // TODO: how to store this locally.
+        apiKey = "XXX" // TODO: how to store this locally.
     )
 
     // Image picker launcher
