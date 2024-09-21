@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,7 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
+import com.google.ai.client.generativeai.GenerativeModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -118,6 +121,12 @@ fun DescribeSymptomScreen() {
     var symptomDescription by remember { mutableStateOf("") }
     var responseText by remember { mutableStateOf("Response will be shown here.") }
 
+    val coroutineScope = rememberCoroutineScope()
+    val generativeModel = GenerativeModel(
+        modelName = "gemini-1.5-flash-latest", // Replace with your actual model
+        apiKey = "XXX" // TODO: how to store this locally.
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -141,14 +150,13 @@ fun DescribeSymptomScreen() {
         Text(text = "Describe your symptoms:")
 
         // Text input box for symptom description
-        BasicTextField(
+        TextField(
             value = symptomDescription,
             onValueChange = { symptomDescription = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
-                .height(150.dp)
-                .border(1.dp, MaterialTheme.colorScheme.onBackground)
+                .padding(8.dp),
+            label = { Text("Symptom description") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -156,8 +164,10 @@ fun DescribeSymptomScreen() {
         // Submit button to send symptom data
         Button(
             onClick = {
-                // Here you'd add the Gemini API logic to get a response
-                responseText = "Simulated API response: You might have a cold. Suggested medicine: Paracetamol."
+                coroutineScope.launch {
+                    val input = "Based on the following symptom(s): $symptomDescription, please provide a detailed explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms."
+                    responseText = generativeModel.generateContent(input).text.orEmpty()
+                }
             },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
         ) {
@@ -167,14 +177,16 @@ fun DescribeSymptomScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Response text to display Gemini's response
-        Text(
-            text = responseText,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
                 .border(1.dp, MaterialTheme.colorScheme.onBackground)
                 .padding(16.dp)
-        )
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(text = responseText)
+        }
     }
 }
 
