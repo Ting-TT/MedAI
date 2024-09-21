@@ -23,6 +23,17 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.foundation.text.BasicTextField
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.ui.text.font.FontWeight
+
+
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MedAINavigation()
+                    //val loginViewModel: LoginViewModel = viewModel()
                 }
             }
         }
@@ -56,8 +68,9 @@ fun MedAINavigation() {
             modifier = Modifier.padding(padding)
         ) {
             composable("home") { HomeScreen(navController) }
-            composable("account") { AccountScreen() }
+            composable("account") { AccountScreen(navController = navController) }
             composable("describe_symptom") { DescribeSymptomScreen() }
+            composable("user_inquiries") { UserInquiries(profile = null) {navController.popBackStack()} }
         }
     }
 }
@@ -179,15 +192,108 @@ fun DescribeSymptomScreen() {
 }
 
 @Composable
-fun AccountScreen() {
-    // Account screen content (you can customize it later)
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Account Screen")
+fun AccountScreen(loginViewModel: LoginViewModel = viewModel(), navController: NavHostController) {
+    val isLoggedIn by loginViewModel.isLoggedIn.collectAsState()
+    val userProfile by loginViewModel.userProfile.collectAsState()
+
+    if (isLoggedIn) {
+        ProfileScreen(userProfile, loginViewModel::logout, navController)
+    } else {
+        LoginScreen(onLogin = { username, password -> loginViewModel.login(username, password) })
     }
 }
+
+@Composable
+fun ProfileScreen(userProfile: UserProfile?, onLogout: () -> Unit, navController: NavHostController) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize() // Fill the maximum available size
+            .padding(16.dp), // Add padding around the edges
+        contentAlignment = Alignment.TopStart // Align content to the top start (upper left)
+    ) {
+        userProfile?.let {
+            Column(
+                horizontalAlignment = Alignment.Start, // Align items to the start
+                verticalArrangement = Arrangement.Top // Align items to the top
+            ) {
+                Text(
+                    text = "Welcome, ${it.username}",
+                    style = TextStyle(fontSize = 24.sp) // Use a specific font size
+                )
+                Spacer(modifier = Modifier.height(8.dp)) // Add space between messages
+                Text(
+                    text = "Email: ${it.email}",
+                    style = TextStyle(fontSize = 16.sp) // Use a specific font size
+                )
+                Spacer(modifier = Modifier.height(24.dp)) // Space before buttons
+
+                // Create clickable list item
+                ClickableListItem(label = "Profile") {  navController.navigate("user_inquiries")}
+                ClickableListItem(label = "History") { /* TODO: Navigate to History */ }
+                ClickableListItem(label = "Log Out") {
+                    onLogout()
+                }
+            }
+        } ?: run {
+            Text(text = "No user profile available", style = TextStyle(fontSize = 16.sp))
+        }
+    }
+}
+
+@Composable
+fun ClickableListItem(label: String, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth() // Make card fill the width
+            .clickable(onClick = onClick) // Make the card clickable
+            .padding(vertical = 30.dp, horizontal = 16.dp) // Add padding inside the card
+        //elevation = 4.dp // Add elevation to give it depth
+    ) {
+        Text(text = label, style = TextStyle(fontSize = 30.sp)) // Set the text style
+    }
+}
+
+
+@Composable
+fun LoginScreen(onLogin: (String, String) -> Unit) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    // Use a Box or Column with a vertical arrangement
+    Box(
+        modifier = Modifier
+            .fillMaxSize() // Fill the maximum available size
+            .padding(16.dp), // Add padding around the edges
+        contentAlignment = Alignment.Center // Center the content
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally, // Center the items horizontally
+            verticalArrangement = Arrangement.Center // Center the items vertically
+        ) {
+            TextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Username") },
+                modifier = Modifier.fillMaxWidth() // Make the TextField fill the width
+            )
+            Spacer(modifier = Modifier.height(8.dp)) // Add space between fields
+            TextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                modifier = Modifier.fillMaxWidth() // Make the TextField fill the width
+            )
+            Spacer(modifier = Modifier.height(16.dp)) // Add space before the button
+            Button(
+                onClick = { onLogin(username, password) },
+                modifier = Modifier.fillMaxWidth() // Make the button fill the width
+            ) {
+                Text("Login")
+            }
+        }
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable
@@ -196,3 +302,172 @@ fun DefaultPreview() {
         MedAINavigation()
     }
 }
+
+@Composable
+fun UserInquiries(profile: Profile?, onBack: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.TopStart
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Back Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Text("User Inquiries", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold))
+            }
+            Spacer(modifier = Modifier.height(16.dp)) // Space below the toolbar
+
+            if (profile != null) {
+                // Existing profile display code
+                Column(
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Text(text = "Name: ${profile.username}", style = TextStyle(fontSize = 24.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Gender: ${profile.gender}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Height: ${profile.height}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Weight: ${profile.weight}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Date of Birth: ${profile.dateOfBirth}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Address: ${profile.address}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Phone Number: ${profile.phoneNumber}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Known Medical Conditions: ${profile.medicalConditions}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Allergies: ${profile.allergies}", style = TextStyle(fontSize = 16.sp))
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Clickable items for navigation can go here
+                    ClickableListItem(label = "Profile") { /* TODO: Navigate to Profile */ }
+                    ClickableListItem(label = "History") { /* TODO: Navigate to History */ }
+                    ClickableListItem(label = "Log Out") { /* TODO: Log out functionality */ }
+                }
+            } else {
+                // Form for user input
+                Column(
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    var username by remember { mutableStateOf("") }
+                    var gender by remember { mutableStateOf("") }
+                    var height by remember { mutableStateOf("") }
+                    var weight by remember { mutableStateOf("") }
+                    var dateOfBirth by remember { mutableStateOf("") }
+                    var address by remember { mutableStateOf("") }
+                    var phoneNumber by remember { mutableStateOf("") }
+                    var medicalConditions by remember { mutableStateOf("") }
+                    var allergies by remember { mutableStateOf("") }
+
+                    TextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = gender,
+                        onValueChange = { gender = it },
+                        label = { Text("Gender") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = height,
+                        onValueChange = { height = it },
+                        label = { Text("Height") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = weight,
+                        onValueChange = { weight = it },
+                        label = { Text("Weight") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = dateOfBirth,
+                        onValueChange = { dateOfBirth = it },
+                        label = { Text("Date of Birth") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        label = { Text("Address") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = phoneNumber,
+                        onValueChange = { phoneNumber = it },
+                        label = { Text("Phone Number") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = medicalConditions,
+                        onValueChange = { medicalConditions = it },
+                        label = { Text("Known Medical Conditions") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextField(
+                        value = allergies,
+                        onValueChange = { allergies = it },
+                        label = { Text("Allergies") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            // Handle form submission, e.g., save the profile
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Save Profile")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+data class Profile(
+    val username: String,
+    val gender: String,
+    val height: String,
+    val weight: String,
+    val dateOfBirth: String,
+    val address: String,
+    val phoneNumber: String,
+    val medicalConditions: String,
+    val allergies: String
+)
+
