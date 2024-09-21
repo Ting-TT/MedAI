@@ -40,7 +40,13 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.ui.text.font.FontWeight
 
-
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.os.Build
+import android.provider.MediaStore
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import com.google.ai.client.generativeai.type.content
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -140,10 +146,11 @@ fun DescribeSymptomScreen() {
     var responseText by remember { mutableStateOf("Response will be shown here.") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash-latest", // Replace with your actual model
-        apiKey = "XXX" // TODO: how to store this locally.
+        apiKey = "XXX"
     )
 
     // Image picker launcher
@@ -207,8 +214,33 @@ fun DescribeSymptomScreen() {
         Button(
             onClick = {
                 coroutineScope.launch {
-                    val input = "Based on the following symptom(s): $symptomDescription, please provide a detailed explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms."
-                    responseText = generativeModel.generateContent(input).text.orEmpty()
+                    // Convert image Uri to Bitmap (if image is provided)
+                    val bitmap: Bitmap? = selectedImageUri?.let { uri ->
+                        getBitmapFromUri(context, uri)
+                    }
+
+                    // Create prompt based on image and symptom description
+                    val inputContent = if (bitmap != null && symptomDescription.isNotEmpty()) {
+                        // User provided both image and symptom description
+                        content {
+                            image(bitmap)
+                            text("Based on both the image and the description: $symptomDescription, please provide an explanation of the potential condition or disease, along with suggestions for possible medications and recommended activities or lifestyle changes to alleviate the symptoms.")
+                        }
+                    } else if (bitmap != null) {
+                        // User provided only image
+                        content {
+                            image(bitmap)
+                            text("The image contains what the user is suffering from. Based on the image, please provide an explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms.")
+                        }
+                    } else {
+                        // User provided only symptom description
+                        content {
+                            text("Based on the following symptom(s): $symptomDescription, please provide a detailed explanation of the potential condition or disease, along with suggestions for possible medications with the suggested dosage and recommended activities or lifestyle changes to alleviate the symptoms.")
+                        }
+                    }
+
+                    // Send the combined prompt to the Gemini API
+                    responseText = generativeModel.generateContent(inputContent).text.orEmpty()
                 }
             },
             modifier = Modifier.fillMaxWidth().padding(8.dp)
@@ -229,6 +261,20 @@ fun DescribeSymptomScreen() {
         ) {
             Text(text = responseText)
         }
+    }
+}
+
+// Function to convert Uri to Bitmap
+fun getBitmapFromUri(context: Context, uri: Uri): Bitmap? {
+    return try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+        } else {
+            MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 
