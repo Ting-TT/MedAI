@@ -73,6 +73,8 @@ import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import com.google.ai.client.generativeai.type.content
 
@@ -543,13 +545,16 @@ fun ClickableListItem(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth() // Make card fill the width
             .clickable(onClick = onClick) // Make the card clickable
-            .padding(vertical = 30.dp, horizontal = 16.dp) // Add padding inside the card
-        //elevation = 4.dp // Add elevation to give it depth
+            .border(1.dp, Color.Gray),
+        shape = RoundedCornerShape(0.dp)
     ) {
-        Text(text = label, style = TextStyle(fontSize = 30.sp)) // Set the text style
+        Text(
+            text = label,
+            style = TextStyle(fontSize = 30.sp, color = Color.Black),
+            modifier = Modifier.padding(vertical = 30.dp, horizontal = 16.dp)
+        )
     }
 }
-
 
 @Composable
 fun LoginScreen(onLogin: (String, String) -> Unit) {
