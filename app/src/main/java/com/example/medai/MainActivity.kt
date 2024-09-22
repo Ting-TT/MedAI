@@ -177,16 +177,33 @@ fun HomeScreen(navController: NavHostController) {
     ) {
         Button(
             onClick = { navController.navigate("describe_symptom") },
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .height(80.dp) // 调整按钮高度
         ) {
-            Text("Describe your symptom")
+            Text(
+                text = "Describe your symptom",
+                fontSize = 24.sp // 调整字体大小
+            )
         }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
         Button(
-            onClick = { navController.navigate("explain_medicine")},
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
+            onClick = { navController.navigate("explain_medicine") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .height(80.dp) // 调整按钮高度
         ) {
-            Text("Get Medicine Details")
+            Text(
+                text = "Get Medicine Details",
+                fontSize = 24.sp // 调整字体大小
+            )
         }
+
+
     }
 }
 
