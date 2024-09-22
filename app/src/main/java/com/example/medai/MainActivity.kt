@@ -120,15 +120,24 @@ fun MedAINavigation() {
         }
     }
 }
-
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
+    val currentRoute = navController.currentBackStackEntry?.destination?.route
+
     BottomNavigation {
         BottomNavigationItem(
             label = { Text("Home") },
-            selected = navController.currentDestination?.route == "home",
+            selected = currentRoute == "home",
             onClick = {
-                navController.navigate("home")
+                if (currentRoute != "home") {
+                    navController.navigate("home") {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
             },
             icon = {
                 Icon(Icons.Default.Home, contentDescription = "Home")
@@ -136,9 +145,17 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
         BottomNavigationItem(
             label = { Text("Account") },
-            selected = navController.currentDestination?.route == "account",
+            selected = currentRoute == "account",
             onClick = {
-                navController.navigate("account")
+                if (currentRoute != "account") {
+                    navController.navigate("account") {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
             },
             icon = {
                 Icon(Icons.Default.AccountCircle, contentDescription = "Account")
@@ -146,6 +163,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
     }
 }
+
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -343,6 +361,7 @@ fun getBitmapFromUri(context: Context, uri: Uri): Bitmap? {
         null
     }
 }
+
 @Composable
 fun ExplainMedicineScreen() {
     var medicineDescription by remember { mutableStateOf("") }
@@ -773,16 +792,6 @@ data class Profile(
     val allergies: String
 )
 
-fun saveResponseToCsv(context: Context, responseText: String) {
-    val file = File(context.filesDir, "response_history.csv")
-
-    // Write to CSV
-    FileOutputStream(file, true).use { outputStream ->
-        val writer = OutputStreamWriter(outputStream)
-        writer.append("$responseText\n") // Append the response text
-        writer.flush()
-    }
-}
 
 fun loadResponseHistory(context: Context): List<String> {
     val file = File(context.filesDir, "response_history.csv")
