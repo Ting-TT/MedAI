@@ -660,7 +660,7 @@ fun UserInquiries(profile: Profile?, onBack: () -> Unit) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                 }
-                Text("User Inquiries", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold))
+                Text("Profile", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold))
             }
             Spacer(modifier = Modifier.height(16.dp)) // Space below the toolbar
 
