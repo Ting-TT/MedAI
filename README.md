@@ -32,14 +32,8 @@ The app features a bottom navigation bar for easy switching between the Home and
 In the Describe Symptom and Explain Medicine screens, users upload images and text, which are sent to the Gemini AI model via the GenerativeModel API. The AI processes the input, returning details like potential conditions or medicine information. Results are displayed in real-time, stored for history, and include a caution to consult professionals.
 
 ## Screenshots
-Home page:![Home](screenshots/Home.png)
-
-Symptom Diagnose page:![SymptomDiagnose](screenshots/SymptomPage.png)
-
-Medicine Explanation page:![MedicineExplanation](screenshots/MedicinePage.png)
-
-Account page:![Account](screenshots/Account.png)
-
-Profile page:![Profile](screenshots/Profile.png)
-
-History page:![History](screenshots/History.png)
+<img src="screenshots/Home.png" alt="Home" width="300"/> <img src="screenshots/SymptomPage.png" alt="SymptomDiagnose" width="300"/>
+<img src="screenshots/MedicinePage.png" alt="MedicineExplanation" width="300"/>
+<img src="screenshots/Account.png" alt="Account" width="300"/>
+<img src="screenshots/Profile.png" alt="Profile" width="300"/>
+<img src="screenshots/History.png" alt="History" width="300"/>
