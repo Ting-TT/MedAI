@@ -120,15 +120,24 @@ fun MedAINavigation() {
         }
     }
 }
-
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
+    val currentRoute = navController.currentBackStackEntry?.destination?.route
+
     BottomNavigation {
         BottomNavigationItem(
             label = { Text("Home") },
-            selected = navController.currentDestination?.route == "home",
+            selected = currentRoute == "home",
             onClick = {
-                navController.navigate("home")
+                if (currentRoute != "home") {
+                    navController.navigate("home") {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
             },
             icon = {
                 Icon(Icons.Default.Home, contentDescription = "Home")
@@ -136,9 +145,17 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
         BottomNavigationItem(
             label = { Text("Account") },
-            selected = navController.currentDestination?.route == "account",
+            selected = currentRoute == "account",
             onClick = {
-                navController.navigate("account")
+                if (currentRoute != "account") {
+                    navController.navigate("account") {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
             },
             icon = {
                 Icon(Icons.Default.AccountCircle, contentDescription = "Account")
@@ -146,6 +163,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
     }
 }
+
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -159,16 +177,33 @@ fun HomeScreen(navController: NavHostController) {
     ) {
         Button(
             onClick = { navController.navigate("describe_symptom") },
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .height(80.dp) // 调整按钮高度
         ) {
-            Text("Describe your symptom")
+            Text(
+                text = "Describe your symptom",
+                fontSize = 24.sp // 调整字体大小
+            )
         }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
         Button(
-            onClick = { navController.navigate("explain_medicine")},
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
+            onClick = { navController.navigate("explain_medicine") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .height(80.dp) // 调整按钮高度
         ) {
-            Text("Get Medicine Details")
+            Text(
+                text = "Get Medicine Details",
+                fontSize = 24.sp // 调整字体大小
+            )
         }
+
+
     }
 }
 
@@ -343,6 +378,7 @@ fun getBitmapFromUri(context: Context, uri: Uri): Bitmap? {
         null
     }
 }
+
 @Composable
 fun ExplainMedicineScreen() {
     var medicineDescription by remember { mutableStateOf("") }
@@ -624,7 +660,7 @@ fun UserInquiries(profile: Profile?, onBack: () -> Unit) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                 }
-                Text("User Inquiries", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold))
+                Text("Profile", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold))
             }
             Spacer(modifier = Modifier.height(16.dp)) // Space below the toolbar
 
@@ -773,16 +809,6 @@ data class Profile(
     val allergies: String
 )
 
-fun saveResponseToCsv(context: Context, responseText: String) {
-    val file = File(context.filesDir, "response_history.csv")
-
-    // Write to CSV
-    FileOutputStream(file, true).use { outputStream ->
-        val writer = OutputStreamWriter(outputStream)
-        writer.append("$responseText\n") // Append the response text
-        writer.flush()
-    }
-}
 
 fun loadResponseHistory(context: Context): List<String> {
     val file = File(context.filesDir, "response_history.csv")
