@@ -793,7 +793,6 @@ fun loadResponseHistory(context: Context): List<String> {
             history.add(line)
         }
     }
-
     return history
 }
 
